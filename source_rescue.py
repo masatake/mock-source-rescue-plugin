@@ -25,10 +25,10 @@ class SourceSOS (Exception):
     pass
 
 class SourceRescue(object):
-    """Source mount dirs from host into chroot"""
+    """Rescuing rpmbuild -bp result"""
     decorate(traceLog())
     def __init__(self, root, opts):
-        self.result = 1
+        self.result = -2
         self.root = root
         self.opts = opts
         self.shelterdir = opts.get("shelterdir", False) or (root.resultdir + "/" + "srpmix")
@@ -52,7 +52,9 @@ class SourceRescue(object):
         self.wash_spec(chrootspec)
             
         getLog().info("Synthesizing source code")
-        root.doChroot(
+
+        try:
+            root.doChroot(
                 ["bash", "--login", "-c", 'rpmbuild -bp --target %s --nodeps %s' % (root.rpmbuild_arch, 
                                                                                     chrootspec)],
                 shell=False,
@@ -60,7 +62,12 @@ class SourceRescue(object):
                 timeout=0,
                 uid=root.chrootuid,
                 gid=root.chrootgid,
+                raiseExc=True
                 )
+        except:
+            getLog().info("Failed in synthesizing")
+            self.result = -1
+            raise SourceSOS
 
         getLog().info("Rescuing source code to %s" % self.shelterdir)
         bd_out = root.makeChrootPath(root.builddir)
@@ -77,7 +84,6 @@ class SourceRescue(object):
     decorate(traceLog())
     def postbuild(self):
         self.root.clean()
-        if self.result == 0:
-            sys.exit(0)
+        sys.exit(self.result)
 
 # mock --resultdir=/tmp/tomcat6 --enable-plugin=source_rescue -r epel-4-x86_64 --rebuild /srv/sources/attic/cradles/ftp.redhat.com/mirror/linux/enterprise/4/en/os/x86_64/SRPMS/unixODBC-2.2.9-1.src.rpm
