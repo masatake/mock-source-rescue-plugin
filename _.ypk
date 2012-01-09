@@ -4,6 +4,11 @@
 (ypack-require "bash")
 (ypack-require "rpm")
 (ypack-name  "mock-source-rescue-plugin")
+;;
 (ypack-entry "source_rescue.py"  "/usr/lib/python2.7/site-packages/mockbuild/plugins/source_rescue.py")
 (ypack-dummy "/usr/lib/python2.7/site-packages/mockbuild/plugins/source_rescue.pyc")
 (ypack-dummy "/usr/lib/python2.7/site-packages/mockbuild/plugins/source_rescue.pyo")
+;;
+(ypack-entry "source_rescue_with_spec_wash.py" "/usr/lib/python2.7/site-packages/mockbuild/plugins/source_rescue_with_spec_wash.py"
+(ypack-dummy "/usr/lib/python2.7/site-packages/mockbuild/plugins/source_rescue_with_spec_wash.pyc")
+(ypack-dummy "/usr/lib/python2.7/site-packages/mockbuild/plugins/source_rescue_with_spec_wash.pyo")
