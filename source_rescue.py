@@ -33,6 +33,7 @@ class SourceRescue(object):
         self.opts = opts
         self.shelterdir = opts.get("shelterdir", False) or (root.resultdir + "/" + "srpmix")
         self.dont_make_patch_backup = opts.get("dont_make_patch_backup", True)
+        self.salt = '.' + 'df6056a7-d1fc-4cc3-b831-6aac00e7f73a'
         if not self.shelterdir:
             raise RuntimeError, "Neither \"shelterdir\" config parameter nor \"resultdir\" config parameter given"
         if os.path.exists(self.shelterdir):
@@ -47,12 +48,10 @@ class SourceRescue(object):
 
         specs = glob.glob(root.makeChrootPath(root.builddir, "SPECS", "*.spec"))
         spec = specs[0]
-        chrootspec = spec.replace(root.makeChrootPath(), '') # get rid of rootdir prefix
-        
-        self.wash_spec(chrootspec)
+        self.wash_spec(spec)
             
         getLog().info("Synthesizing source code")
-
+        chrootspec = spec.replace(root.makeChrootPath(), '') # get rid of rootdir prefix
         try:
             root.doChroot(
                 ["bash", "--login", "-c", 'rpmbuild -bp --target %s --nodeps %s' % (root.rpmbuild_arch, 
@@ -71,9 +70,11 @@ class SourceRescue(object):
 
         getLog().info("Rescuing source code to %s" % self.shelterdir)
         bd_out = root.makeChrootPath(root.builddir)
-        os.system("chmod -R u+r %s"%bd_out)
+        os.system("chmod -R a+r %s"%bd_out)
+        os.system("find %s -type d -print0 | xargs -0 chmod a+x"%bd_out)
         shutil.copytree(bd_out, self.shelterdir, symlinks=True)
-
+        os.system("find %s -name '*%s' -print0 | xargs -0 rm -f"%(self.shelterdir, self.salt))
+        os.system ("mv %sb %s" % (spec, spec))
         self.result = 0
         raise SourceSOS
     
@@ -84,8 +85,9 @@ class SourceRescue(object):
 
     decorate(traceLog())        
     def wash__dont_make_patch_backup(self, spec):
-        sed = "sed -i -e 's/\(^%patch[0-9]\+.*\)[ \t]-b[ \t]\+[^ \t]\+\(.*\)/\1 \2/' %s"
-        os.system(sed % spec)
+        os.system ("cp %s %sb"  % (spec, spec))
+        sed = "sed -i -e 's/\\(^%%patch[0-9]\\+.*\\)[ \\t]-b[ \\t]\+[^ \\t]\+\\(.*\\)/\\1 -b %s \\2/' %s"
+        os.system(sed % (self.salt, spec))
 
     decorate(traceLog())
     def postbuild(self):
