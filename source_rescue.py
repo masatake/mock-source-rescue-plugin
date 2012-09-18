@@ -32,7 +32,7 @@ class SourceRescue(object):
         self.root = root
         self.opts = opts
         self.shelterdir = opts.get("shelterdir", False) or (root.resultdir + "/" + "srpmix")
-        
+        self.dont_make_patch_backup = opts.get("dont_make_patch_backup", True)
         if not self.shelterdir:
             raise RuntimeError, "Neither \"shelterdir\" config parameter nor \"resultdir\" config parameter given"
         if os.path.exists(self.shelterdir):
@@ -79,7 +79,13 @@ class SourceRescue(object):
     
     decorate(traceLog())
     def wash_spec(self, spec):
-        pass
+        if self.dont_make_patch_backup:
+            self.wash__dont_make_patch_backup(spec)
+
+    decorate(traceLog())        
+    def wash__dont_make_patch_backup(self, spec):
+        sed = "sed -i -e 's/\(^%patch[0-9]\+.*\)[ \t]-b[ \t]\+[^ \t]\+\(.*\)/\1 \2/' %s"
+        os.system(sed % spec)
 
     decorate(traceLog())
     def postbuild(self):
